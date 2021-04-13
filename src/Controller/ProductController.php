@@ -55,7 +55,7 @@ class ProductController extends AbstractController
 
         $content = $request->toArray();
         $product->setName($content['name']);
-        $product->setDescription($content['description'] ?? "");
+        $product->setDescription($content['description'] ?? '');
         $product->setPhoto($content['photo']);
         $product->setPrice($content['price']);
 
