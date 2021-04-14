@@ -26,9 +26,10 @@
       shell: | 
         php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
         php -r "if (hash_file('sha384', 'composer-setup.php') === '756890a4488ce9024fc62c56153228907f1545c228516cbf63f885e036d37e9a59d27d63f46af1d4d07ee0f76181c7d3') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-        php composer-setup.php --install-dir=bin
+        php composer-setup.php --install-dir=/usr/local/bin --filename=composer
         php -r "unlink('composer-setup.php');"
         wget https://get.symfony.com/cli/installer -O - | bash
+        mv /root/.symfony/bin/symfony /usr/local/bin/symfony
 
 
     - name: install apache2 # Install Apache2 web server 
@@ -41,6 +42,7 @@
       shell: | 
         a2enmod proxy_fcgi setenvif
         a2enconf php8.0-fpm
+        mkdir -p /var/www/e-commerce/
 
     - name: enabled mod_rewrite # Give rights to apache
       apache2_module: 
@@ -51,10 +53,21 @@
 
     - name: Copy a app  # Copy all the repository 
       copy:
-        src: ./
-        dest: /var/www/html
+        src: "{{ item }}"
+        dest: /var/www/e-commerce
         owner: www-data
         group: www-data
+      with_items:
+      - bin/
+      - config/
+      - front/
+      - migrations/
+      - public/
+      - src/
+      - .env
+      - composer.json
+      - composer.lock
+      - symfony.lock
 
     - name: set time php  # Set EU/Paris time zone for PHP
       become: true
@@ -63,18 +76,22 @@
         regexp: "date.timezone ="
         line: "date.timezome = Europe/Paris"
 
-    #- name: run back # Run back application
-      #command: symfony server:start
-      #command: php bin/console server:start
-
-
-    - name: Run Front # Run front application
+    - name: run back # Run back application
       shell: | 
-        npm install npm@latest -g
-        npm install
-        npm start
+        npm install --force
+        yes | composer update
+        yes | composer install
+        symfony server:start
       args:
-        chdir: /var/www/html/front/
+        chdir: /var/www/e-commerce/
+
+    # - name: Run Front # Run front application
+    #   shell: | 
+    #     npm install npm@latest -g
+    #     npm install
+    #     npm start
+    #   args:
+    #     chdir: /var/www/html/front/
 
     - name: Ensure apache is running
       ansible.builtin.service:
