@@ -53,25 +53,4 @@ class UserController extends AbstractController
 
         return new Response('Saved new user with id ' . $user->getId());
     }
-
-    #[Route('/api/login', name: 'login_user', methods: ['GET', 'POST'])]
-    public function login(AuthenticationUtils $authenticationUtils): Response
-    {
-        // if ($this->getUser()) {
-        //     return $this->redirectToRoute('target_path');
-        // }
-
-        // get the login error if there is one
-        $error = $authenticationUtils->getLastAuthenticationError();
-        // last username entered by the user
-        $lastUsername = $authenticationUtils->getLastUsername();
-
-        return new JsonResponse(['last_username' => $lastUsername, 'error' => $error]);
-    }
-
-    #[Route('/api/logout', name: 'logout_user', methods: ['GET'])]
-    public function logout()
-    {
-        return new Response('Logged out !');
-    }
 }

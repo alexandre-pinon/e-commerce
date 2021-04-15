@@ -27,7 +27,7 @@ class ProductController extends AbstractController
         $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
     }
 
-    #[Route('/api/product', name: 'show_all_products', methods: ['GET'])]
+    #[Route('/api/products', name: 'show_all_products', methods: ['GET'])]
     public function showAllProducts(ProductRepository $productRepository): JsonResponse
     {
         $products = $productRepository->findAll();
