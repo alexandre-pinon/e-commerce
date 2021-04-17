@@ -36,6 +36,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->_em->flush();
     }
 
+    public function usernameExists(string $login): bool
+    {
+        return $this->findOneBy(['login' => $login]) ? true : false;
+    }
+
     // /**
     //  * @return User[] Returns an array of User objects
     //  */

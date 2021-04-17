@@ -6,7 +6,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 
 use Doctrine\ORM\EntityManagerInterface;
-
+use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,12 +31,16 @@ class UserController extends AbstractController
     #[Route('/api/register', name: 'register_user', methods: ['POST'])]
     public function registerUser(
         EntityManagerInterface $entityManager,
+        UserRepository $userRepository,
         ValidatorInterface $validator,
         Request $request
     ): Response {
-        $user = new User();
-
         $content = $request->toArray();
+        if ($userRepository->usernameExists($content['login'])) {
+            return new JsonResponse(['message' => "Username {$content['login']} is already taken !"], 409);
+        }
+
+        $user = new User();
         $user->setLogin($content['login']);
         $user->setPassword($this->passwordEncoder->encodePassword($user, $content['password']));
         $user->setEmail($content['email']);
@@ -45,12 +49,12 @@ class UserController extends AbstractController
 
         $errors = $validator->validate($user);
         if (count($errors) > 0) {
-            return new Response((string) $errors, 400);
+            return new JsonResponse(['message' => "One or more fields contains errors !", 'errors' => $errors], 400);
         }
 
         $entityManager->persist($user);
         $entityManager->flush();
 
-        return new Response('Saved new user with id ' . $user->getId());
+        return new JsonResponse(['message' => "Successfully saved new user ! (id: {$user->getId()})"], 201);
     }
 }

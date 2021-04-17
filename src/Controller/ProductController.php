@@ -31,6 +31,11 @@ class ProductController extends AbstractController
     public function showAllProducts(ProductRepository $productRepository): JsonResponse
     {
         $products = $productRepository->findAll();
+        if (!$products) {
+            throw $this->createNotFoundException(
+                "No products found in DB !"
+            );
+        }
         $response = $this->serializer->serialize($products, 'json');
 
         return JsonResponse::fromJsonString($response);
@@ -40,6 +45,12 @@ class ProductController extends AbstractController
     public function showProduct(ProductRepository $productRepository, int $productId): JsonResponse
     {
         $product = $productRepository->find($productId);
+        if (!$product) {
+            throw $this->createNotFoundException(
+                "No product found for productId {$productId} !"
+            );
+        }
+
         $response = $this->serializer->serialize($product, 'json');
 
         return JsonResponse::fromJsonString($response);
@@ -61,13 +72,13 @@ class ProductController extends AbstractController
 
         $errors = $validator->validate($product);
         if (count($errors) > 0) {
-            return new Response((string) $errors, 400);
+            return new JsonResponse(['message' => "One or more fields contains errors !", 'errors' => $errors], 400);
         }
 
         $entityManager->persist($product);
         $entityManager->flush();
 
-        return new Response('Saved new product with id ' . $product->getId());
+        return new JsonResponse(['message' => "Successfully saved new product ! (id: {$product->getId()})"], 201);
     }
 
     #[Route('/admin/product/{productId}', name: 'update_product', methods: ['PUT'])]
@@ -81,7 +92,7 @@ class ProductController extends AbstractController
 
         if (!$product) {
             throw $this->createNotFoundException(
-                'No product found for productId ' . $productId
+                "No product found for productId {$productId} !"
             );
         }
 
@@ -105,9 +116,15 @@ class ProductController extends AbstractController
     ): Response {
         $product = $productRepository->find($productId);
 
+        if (!$product) {
+            throw $this->createNotFoundException(
+                "No product found for productId {$productId} !"
+            );
+        }
+
         $entityManager->remove($product);
         $entityManager->flush();
 
-        return new Response('Deleted product with id ' . $productId);
+        return new JsonResponse(['message' => "Successfully deleted product ! (id: {$productId})"]);
     }
 }
