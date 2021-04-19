@@ -12,32 +12,25 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\SerializerInterface;
 
 class ProductController extends AbstractController
 {
-
-    private Serializer $serializer;
-
-    public function __construct()
-    {
-        $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
-    }
-
     #[Route('/api/products', name: 'show_all_products', methods: ['GET'])]
-    public function showAllProducts(ProductRepository $productRepository): JsonResponse
+    public function showAllProducts(SerializerInterface $serializer, ProductRepository $productRepository): JsonResponse
     {
         $products = $productRepository->findAll();
-        $response = $this->serializer->serialize($products, 'json');
+        $response = $serializer->serialize($products, 'json');
 
         return JsonResponse::fromJsonString($response);
     }
 
     #[Route('/api/product/{productId}', name: 'show_product', methods: ['GET'])]
-    public function showProduct(ProductRepository $productRepository, int $productId): JsonResponse
-    {
+    public function showProduct(
+        SerializerInterface $serializer,
+        ProductRepository $productRepository,
+        int $productId
+    ): JsonResponse {
         $product = $productRepository->find($productId);
 
         if (!$product) {
@@ -47,7 +40,7 @@ class ProductController extends AbstractController
             );
         }
 
-        $response = $this->serializer->serialize($product, 'json');
+        $response = $serializer->serialize($product, 'json');
 
         return JsonResponse::fromJsonString($response);
     }

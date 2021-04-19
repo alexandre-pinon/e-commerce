@@ -65,9 +65,17 @@ security:
             # logout:
             #     path:   logout_user
         
-        cart:
+        carts:
             pattern: ^/api/cart
             methods: ['GET', 'POST', 'DELETE']
+            stateless: true
+            guard:
+                authenticators:
+                    - lexik_jwt_authentication.jwt_token_authenticator
+
+        orders:
+            pattern: ^/api/order
+            methods: ['GET']
             stateless: true
             guard:
                 authenticators:
@@ -80,3 +88,4 @@ security:
         - { path: ^/api/user, roles: IS_AUTHENTICATED_FULLY, methods: ['GET', 'PUT'] }
         - { path: ^/api/logout, roles: IS_AUTHENTICATED_FULLY, methods: ['POST'] }
         - { path: ^/api/cart, roles: IS_AUTHENTICATED_FULLY, methods: ['GET', 'POST', 'DELETE'] }
+        - { path: ^/api/order, roles: IS_AUTHENTICATED_FULLY, methods: ['GET'] }

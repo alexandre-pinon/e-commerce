@@ -14,15 +14,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 
 class UserController extends AbstractController
 {
-    private Serializer $serializer;
     private UserPasswordEncoderInterface $passwordEncoder;
     private JWTEncoderInterface $jwtEncoder;
     private JWTService $jwtService;
@@ -32,7 +29,6 @@ class UserController extends AbstractController
         JWTEncoderInterface $jwtEncoder,
         JWTService $jwtService,
     ) {
-        $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
         $this->passwordEncoder = $passwordEncoder;
         $this->jwtEncoder = $jwtEncoder;
         $this->jwtService = $jwtService;
@@ -73,6 +69,7 @@ class UserController extends AbstractController
 
         $cart = new Cart();
         $cart->setUser($user);
+        $user->setCart($cart);
 
         $entityManager->persist($user);
         $entityManager->persist($cart);
@@ -99,8 +96,11 @@ class UserController extends AbstractController
     }
 
     #[Route('/api/user', name: 'show_user', methods: ['GET'])]
-    public function showUser(UserRepository $userRepository, Request $request): JsonResponse
-    {
+    public function showUser(
+        SerializerInterface $serializer,
+        UserRepository $userRepository,
+        Request $request
+    ): JsonResponse {
         $login = JWTService::getLoginFromToken($request, $this->jwtEncoder);
         $user = $userRepository->getUserIfExists($login);
 
@@ -111,7 +111,7 @@ class UserController extends AbstractController
             );
         }
 
-        $response = $this->serializer->serialize($user, 'json');
+        $response = $serializer->serialize($user, 'json', ['groups' => 'userinfo']);
 
         return JsonResponse::fromJsonString($response);
     }
@@ -121,7 +121,7 @@ class UserController extends AbstractController
         EntityManagerInterface $entityManager,
         UserRepository $userRepository,
         Request $request
-    ): JsonResponse {
+    ): Response {
         $login = JWTService::getLoginFromToken($request, $this->jwtEncoder);
         $user = $userRepository->getUserIfExists($login);
 

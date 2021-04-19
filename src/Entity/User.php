@@ -3,8 +3,11 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * @ORM\Entity(repositoryClass=UserRepository::class)
@@ -15,11 +18,13 @@ class User implements UserInterface
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
+     * @Groups({"userinfo"})
      */
     private $id;
 
     /**
      * @ORM\Column(type="string", length=180)
+     * @Groups({"userinfo"})
      */
     private $email;
 
@@ -36,16 +41,19 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups({"userinfo"})
      */
     private $firstname;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups({"userinfo"})
      */
     private $lastname;
 
     /**
      * @ORM\Column(type="string", length=255, unique=true)
+     * @Groups({"userinfo"})
      */
     private $login;
 
@@ -53,6 +61,16 @@ class User implements UserInterface
      * @ORM\OneToOne(targetEntity=Cart::class, mappedBy="user", cascade={"persist", "remove"})
      */
     private $cart;
+
+    /**
+     * @ORM\OneToMany(targetEntity=Order::class, mappedBy="user", cascade={"persist", "remove"})
+     */
+    private $orders;
+
+    public function __construct()
+    {
+        $this->orders = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -178,12 +196,31 @@ class User implements UserInterface
 
     public function setCart(Cart $cart): self
     {
-        // set the owning side of the relation if necessary
-        if ($cart->getUser() !== $this) {
-            $cart->setUser($this);
+        $this->cart = $cart;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Order[]
+     */
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
+    public function addOrder(Order $order): self
+    {
+        if (!$this->orders->contains($order)) {
+            $this->orders[] = $order;
         }
 
-        $this->cart = $cart;
+        return $this;
+    }
+
+    public function removeOrder(Order $order): self
+    {
+        $this->orders->removeElement($order);
 
         return $this;
     }

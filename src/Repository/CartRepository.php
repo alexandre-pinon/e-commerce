@@ -19,6 +19,18 @@ class CartRepository extends ServiceEntityRepository
         parent::__construct($registry, Cart::class);
     }
 
+    public function calculateTotalPrice(Cart $cart): float
+    {
+        $products = $cart->getProducts();
+        $total = 0.00;
+        if (sizeof($products)) {
+            foreach($products as $product) {
+                $total += $product->getPrice();
+            }
+        }
+        return $total;
+    }
+
     // /**
     //  * @return Cart[] Returns an array of Cart objects
     //  */

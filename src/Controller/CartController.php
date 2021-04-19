@@ -3,10 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\Cart;
+use App\Entity\Order;
 use App\Repository\CartRepository;
+use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
 use App\Repository\UserRepository;
 use App\Service\JWT\JWTService;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -14,19 +17,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\SerializerInterface;
 
 class CartController extends AbstractController
 {
 
-    private Serializer $serializer;
     private JWTEncoderInterface $jwtEncoder;
 
     public function __construct(JWTEncoderInterface $jwtEncoder)
     {
-        $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
         $this->jwtEncoder = $jwtEncoder;
     }
 
@@ -55,7 +54,7 @@ class CartController extends AbstractController
             );
         }
 
-        $result = ['cart' => $cart];
+        $result = ['cart' => $cart, 'user' => $user];
 
         if ($productId && $productRepository) {
             $product = $productRepository->find($productId);
@@ -74,8 +73,11 @@ class CartController extends AbstractController
     }
 
     #[Route('/api/cart', name: 'show_cart', methods: ['GET'])]
-    public function showCart(UserRepository $userRepository, Request $request): JsonResponse
-    {
+    public function showCart(
+        SerializerInterface $serializer,
+        UserRepository $userRepository,
+        Request $request
+    ): JsonResponse {
         $content = $this->checkRequest($request, $userRepository);
 
         if ($content instanceof JsonResponse) {
@@ -85,9 +87,56 @@ class CartController extends AbstractController
         $cart = $content['cart'];
 
         $products = $cart->getProducts();
-        $response = $this->serializer->serialize($products, 'json');
+        $response = $serializer->serialize($products, 'json');
 
         return JsonResponse::fromJsonString($response);
+    }
+
+    #[Route('/api/cart/validate', name: 'validate_cart', methods: ['POST'])]
+    public function validateCart(
+        EntityManagerInterface $entityManager,
+        UserRepository $userRepository,
+        CartRepository $cartRepository,
+        Request $request
+    ): JsonResponse {
+        $content = $this->checkRequest($request, $userRepository);
+
+        if ($content instanceof JsonResponse) {
+            return $content;
+        }
+
+        ['cart' => $cart, 'user' => $user] = $content;
+        $products = $cart->getProducts();
+
+        if (!sizeof($products)) {
+            return new JsonResponse(
+                ['message' => "Cart is empty !"],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $totalPrice = $cartRepository->calculateTotalPrice($cart);
+        $creationDate = new DateTime('now');
+
+        $order = new Order();
+        $order->setTotalPrice($totalPrice);
+        $order->setCreationDate($creationDate);
+
+        foreach ($products as $product) {
+            $order->addProduct($product);
+            $cart->removeProduct($product);
+        }
+
+        $order->setUser($user);
+        $user->addOrder($order);
+
+        $entityManager->persist($order);
+        $entityManager->flush();
+
+        return new JsonResponse(
+            ['message' => "Successfully validated order ! (id: {$order->getId()})"],
+            Response::HTTP_CREATED
+        );
     }
 
     #[Route('/api/cart/{productId}', name: 'add_product', methods: ['POST'])]
@@ -126,7 +175,7 @@ class CartController extends AbstractController
             return $content;
         }
 
-        ['cart' => $cart, 'product' => $product] = $content;
+        ['cart' => $cart, 'product' => $product, 'user' => $user] = $content;
 
         if (!$cart->getProducts()->contains($product)) {
             return new JsonResponse(
