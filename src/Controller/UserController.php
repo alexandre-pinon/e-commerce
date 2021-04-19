@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Cart;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\JWT\JWTService;
@@ -18,21 +19,6 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
-
-function getLoginFromToken(Request $request, JWTEncoderInterface $jwtEncoder): string
-{
-    $authorizationHeader = $request->headers->get('Authorization');
-
-    if (!$authorizationHeader) {
-        return '';
-    }
-
-    $token = substr($authorizationHeader, 7); # skip beyond 'Bearer '
-    $payload = $jwtEncoder->decode($token);
-    $login = $payload['login'] ?? '';
-
-    return $login;
-}
 
 class UserController extends AbstractController
 {
@@ -57,7 +43,7 @@ class UserController extends AbstractController
         EntityManagerInterface $entityManager,
         UserRepository $userRepository,
         Request $request
-    ): Response {
+    ): JsonResponse {
         $content = $request->toArray();
 
         $login = $content['login'] ?? '';
@@ -85,7 +71,11 @@ class UserController extends AbstractController
         $user->setFirstname($content['firstname'] ?? '');
         $user->setLastname($content['lastname'] ?? '');
 
+        $cart = new Cart();
+        $cart->setUser($user);
+
         $entityManager->persist($user);
+        $entityManager->persist($cart);
         $entityManager->flush();
 
         return new JsonResponse(
@@ -100,18 +90,18 @@ class UserController extends AbstractController
     }
 
     #[Route('/api/logout', name: 'logout_user', methods: ['POST'])]
-    public function logout(EntityManagerInterface $entityManager, Request $request): Response
+    public function logout(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
-        $login = getLoginFromToken($request, $this->jwtEncoder);
+        $login = JWTService::getLoginFromToken($request, $this->jwtEncoder);
         JWTService::cleanRefreshTokens($entityManager, $login);
 
         return new JsonResponse(['message' => "Successfully logged out !"]);
     }
 
     #[Route('/api/user', name: 'show_user', methods: ['GET'])]
-    public function showUser(UserRepository $userRepository, Request $request): Response
+    public function showUser(UserRepository $userRepository, Request $request): JsonResponse
     {
-        $login = getLoginFromToken($request, $this->jwtEncoder);
+        $login = JWTService::getLoginFromToken($request, $this->jwtEncoder);
         $user = $userRepository->getUserIfExists($login);
 
         if (!$user) {
@@ -131,8 +121,8 @@ class UserController extends AbstractController
         EntityManagerInterface $entityManager,
         UserRepository $userRepository,
         Request $request
-    ): Response {
-        $login = getLoginFromToken($request, $this->jwtEncoder);
+    ): JsonResponse {
+        $login = JWTService::getLoginFromToken($request, $this->jwtEncoder);
         $user = $userRepository->getUserIfExists($login);
 
         if (!$user) {

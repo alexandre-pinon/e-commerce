@@ -30,13 +30,6 @@ class ProductController extends AbstractController
     public function showAllProducts(ProductRepository $productRepository): JsonResponse
     {
         $products = $productRepository->findAll();
-
-        if (!$products) {
-            return new JsonResponse(
-                ['message' => "No products found in DB !"],
-                Response::HTTP_NOT_FOUND
-            );
-        }
         $response = $this->serializer->serialize($products, 'json');
 
         return JsonResponse::fromJsonString($response);
@@ -63,7 +56,7 @@ class ProductController extends AbstractController
     public function createProduct(
         EntityManagerInterface $entityManager,
         Request $request
-    ): Response {
+    ): JsonResponse {
         $product = new Product();
 
         $name = $content['name'] ?? '';
@@ -125,7 +118,7 @@ class ProductController extends AbstractController
         EntityManagerInterface $entityManager,
         ProductRepository $productRepository,
         int $productId,
-    ): Response {
+    ): JsonResponse {
         $product = $productRepository->find($productId);
 
         if (!$product) {

@@ -7,7 +7,9 @@ namespace App\Service\JWT;
 use App\Entity\User;
 use Doctrine\ORM\EntityManager;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class JWTService
@@ -36,12 +38,12 @@ final class JWTService
         $this->ttl = $ttl;
     }
 
-    public function createNewJWT(User $user)
+    public function createNewJWT(User $user): array
     {
         $token = $this->tokenManager->create($user);
 
         $datetime = new \DateTime();
-        $datetime->modify('+'.$this->ttl.' seconds');
+        $datetime->modify('+' . $this->ttl . ' seconds');
 
         $refreshToken = $this->refreshTokenManager->create();
 
@@ -49,7 +51,7 @@ final class JWTService
         $refreshToken->setRefreshToken();
         $refreshToken->setValid($datetime);
 
-		// Validate, that the new token is a unique refresh token
+        // Validate, that the new token is a unique refresh token
         $valid = false;
         while (false === $valid) {
             $valid = true;
@@ -70,7 +72,8 @@ final class JWTService
         return $jwt;
     }
 
-    public static function cleanRefreshTokens(EntityManager $entityManager, string $username) {
+    public static function cleanRefreshTokens(EntityManager $entityManager, string $username): void
+    {
         if (!$username) {
             return;
         }
@@ -80,9 +83,23 @@ final class JWTService
         $queryBuilder
             ->delete('refresh_tokens')
             ->where('username = ?')
-            ->setParameter(0, $username)
-        ;
+            ->setParameter(0, $username);
         $queryBuilder->execute();
         $conn->close();
+    }
+
+    public static function getLoginFromToken(Request $request, JWTEncoderInterface $jwtEncoder): string
+    {
+        $authorizationHeader = $request->headers->get('Authorization');
+
+        if (!$authorizationHeader) {
+            return '';
+        }
+
+        $token = substr($authorizationHeader, 7); # skip beyond 'Bearer '
+        $payload = $jwtEncoder->decode($token);
+        $login = $payload['login'] ?? '';
+
+        return $login;
     }
 }
