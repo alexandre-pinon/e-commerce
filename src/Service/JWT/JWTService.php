@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\JWT;
 
 use App\Entity\User;
+use Doctrine\ORM\EntityManager;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -67,5 +68,21 @@ final class JWTService
 
         $jwt = ['token' => $token, 'refresh_token' => $refreshToken->getRefreshToken()];
         return $jwt;
+    }
+
+    public static function cleanRefreshTokens(EntityManager $entityManager, string $username) {
+        if (!$username) {
+            return;
+        }
+        $conn = $entityManager->getConnection();
+        $queryBuilder = $conn->createQueryBuilder();
+
+        $queryBuilder
+            ->delete('refresh_tokens')
+            ->where('username = ?')
+            ->setParameter(0, $username)
+        ;
+        $queryBuilder->execute();
+        $conn->close();
     }
 }

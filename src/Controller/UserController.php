@@ -13,11 +13,26 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+
+
+function getLoginFromToken(Request $request, JWTEncoderInterface $jwtEncoder): string
+{
+    $authorizationHeader = $request->headers->get('Authorization');
+
+    if (!$authorizationHeader) {
+        return '';
+    }
+
+    $token = substr($authorizationHeader, 7); # skip beyond 'Bearer '
+    $payload = $jwtEncoder->decode($token);
+    $login = $payload['login'] ?? '';
+
+    return $login;
+}
 
 class UserController extends AbstractController
 {
@@ -41,30 +56,42 @@ class UserController extends AbstractController
     public function registerUser(
         EntityManagerInterface $entityManager,
         UserRepository $userRepository,
-        ValidatorInterface $validator,
         Request $request
     ): Response {
         $content = $request->toArray();
-        if ($userRepository->usernameExists($content['login'])) {
-            return new JsonResponse(['message' => "Username {$content['login']} is already taken !"], 409);
+
+        $login = $content['login'] ?? '';
+        $password = $content['password'] ?? '';
+        $email = $content['email'] ?? '';
+
+        if (!$login || !$password || !$email) {
+            return new JsonResponse(
+                ['message' => "One or more field is missing !"],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        if ($userRepository->usernameExists($login)) {
+            return new JsonResponse(
+                ['message' => "Username {$login} is already taken !"],
+                Response::HTTP_CONFLICT
+            );
         }
 
         $user = new User();
-        $user->setLogin($content['login']);
-        $user->setPassword($this->passwordEncoder->encodePassword($user, $content['password']));
-        $user->setEmail($content['email']);
+        $user->setLogin($login);
+        $user->setPassword($this->passwordEncoder->encodePassword($user, $password));
+        $user->setEmail($email);
         $user->setFirstname($content['firstname'] ?? '');
         $user->setLastname($content['lastname'] ?? '');
-
-        $errors = $validator->validate($user);
-        if (count($errors) > 0) {
-            return new JsonResponse(['message' => "One or more fields contains errors !", 'errors' => $errors], 400);
-        }
 
         $entityManager->persist($user);
         $entityManager->flush();
 
-        return new JsonResponse(['message' => "Successfully saved new user ! (id: {$user->getId()})"], 201);
+        return new JsonResponse(
+            ['message' => "Successfully saved new user ! (id: {$user->getId()})"],
+            Response::HTTP_CREATED
+        );
     }
 
     #[Route('/api/login', name: 'login_user', methods: ['POST'])]
@@ -72,20 +99,28 @@ class UserController extends AbstractController
     {
     }
 
+    #[Route('/api/logout', name: 'logout_user', methods: ['POST'])]
+    public function logout(EntityManagerInterface $entityManager, Request $request): Response
+    {
+        $login = getLoginFromToken($request, $this->jwtEncoder);
+        JWTService::cleanRefreshTokens($entityManager, $login);
+
+        return new JsonResponse(['message' => "Successfully logged out !"]);
+    }
+
     #[Route('/api/user', name: 'show_user', methods: ['GET'])]
     public function showUser(UserRepository $userRepository, Request $request): Response
     {
-        $authorizationHeader = $request->headers->get('Authorization');
-        $token = substr($authorizationHeader, 7); # skip beyond 'Bearer '
-        $payload = $this->jwtEncoder->decode($token);
-        $login = $payload['login'];
+        $login = getLoginFromToken($request, $this->jwtEncoder);
+        $user = $userRepository->getUserIfExists($login);
 
-        $user = $userRepository->findOneBy(['login' => $login]);
         if (!$user) {
-            throw $this->createNotFoundException(
-                "No user found for username {$login} !"
+            return new JsonResponse(
+                ['message' => "No user found for username {$login} !"],
+                Response::HTTP_NOT_FOUND
             );
         }
+
         $response = $this->serializer->serialize($user, 'json');
 
         return JsonResponse::fromJsonString($response);
@@ -97,15 +132,13 @@ class UserController extends AbstractController
         UserRepository $userRepository,
         Request $request
     ): Response {
-        $authorizationHeader = $request->headers->get('Authorization');
-        $token = substr($authorizationHeader, 7); # skip beyond 'Bearer '
-        $payload = $this->jwtEncoder->decode($token);
-        $login = $payload['login'];
+        $login = getLoginFromToken($request, $this->jwtEncoder);
+        $user = $userRepository->getUserIfExists($login);
 
-        $user = $userRepository->findOneBy(['login' => $login]);
         if (!$user) {
-            throw $this->createNotFoundException(
-                "No user found for username {$login} !"
+            return new JsonResponse(
+                ['message' => "No user found for username {$login} !"],
+                Response::HTTP_NOT_FOUND
             );
         }
 
@@ -126,6 +159,9 @@ class UserController extends AbstractController
 
         if ($oldLogin != $newLogin) { # Regenerate a whole new token in that case
             $jwt = $this->jwtService->createNewJWT($user);
+            if ($jwt) { # Clean up old refresh token
+                JWTService::cleanRefreshTokens($entityManager, $oldLogin);
+            }
             return new JsonResponse($jwt);
         }
 
