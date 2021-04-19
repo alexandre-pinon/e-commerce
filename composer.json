@@ -12,6 +12,8 @@
         "doctrine/doctrine-bundle": "^2.3",
         "doctrine/doctrine-migrations-bundle": "^3.1",
         "doctrine/orm": "^2.8",
+        "gesdinet/jwt-refresh-token-bundle": "^0.11.1",
+        "lexik/jwt-authentication-bundle": "^2.11",
         "phpdocumentor/reflection-docblock": "^5.2",
         "sensio/framework-extra-bundle": "^6.1",
         "symfony/apache-pack": "^1.0",
@@ -72,6 +74,7 @@
     },
     "require-dev": {
         "symfony/maker-bundle": "^1.30",
-        "symfony/stopwatch": "^5.2"
+        "symfony/stopwatch": "^5.2",
+        "symfony/web-server-bundle": "^4.4.21"
     }
 }

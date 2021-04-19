@@ -12,7 +12,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
@@ -27,10 +26,17 @@ class ProductController extends AbstractController
         $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
     }
 
-    #[Route('/api/product', name: 'show_all_products', methods: ['GET'])]
+    #[Route('/api/products', name: 'show_all_products', methods: ['GET'])]
     public function showAllProducts(ProductRepository $productRepository): JsonResponse
     {
         $products = $productRepository->findAll();
+
+        if (!$products) {
+            return new JsonResponse(
+                ['message' => "No products found in DB !"],
+                Response::HTTP_NOT_FOUND
+            );
+        }
         $response = $this->serializer->serialize($products, 'json');
 
         return JsonResponse::fromJsonString($response);
@@ -40,6 +46,14 @@ class ProductController extends AbstractController
     public function showProduct(ProductRepository $productRepository, int $productId): JsonResponse
     {
         $product = $productRepository->find($productId);
+
+        if (!$product) {
+            return new JsonResponse(
+                ['message' => "No product found for productId {$productId} !"],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
         $response = $this->serializer->serialize($product, 'json');
 
         return JsonResponse::fromJsonString($response);
@@ -48,26 +62,34 @@ class ProductController extends AbstractController
     #[Route('/admin/product', name: 'create_product', methods: ['POST'])]
     public function createProduct(
         EntityManagerInterface $entityManager,
-        ValidatorInterface $validator,
         Request $request
     ): Response {
         $product = new Product();
 
-        $content = $request->toArray();
-        $product->setName($content['name']);
-        $product->setDescription($content['description'] ?? '');
-        $product->setPhoto($content['photo']);
-        $product->setPrice($content['price']);
+        $name = $content['name'] ?? '';
+        $photo = $content['photo'] ?? '';
+        $price = $content['price'] ?? '';
 
-        $errors = $validator->validate($product);
-        if (count($errors) > 0) {
-            return new Response((string) $errors, 400);
+        if (!$name || !$photo || !$price) {
+            return new JsonResponse(
+                ['message' => "One or more field is missing !"],
+                Response::HTTP_BAD_REQUEST
+            );
         }
+
+        $content = $request->toArray();
+        $product->setName($name);
+        $product->setDescription($content['description'] ?? '');
+        $product->setPhoto($photo);
+        $product->setPrice($price);
 
         $entityManager->persist($product);
         $entityManager->flush();
 
-        return new Response('Saved new product with id ' . $product->getId());
+        return new JsonResponse(
+            ['message' => "Successfully saved new product ! (id: {$product->getId()})"],
+            Response::HTTP_CREATED
+        );
     }
 
     #[Route('/admin/product/{productId}', name: 'update_product', methods: ['PUT'])]
@@ -80,8 +102,9 @@ class ProductController extends AbstractController
         $product = $productRepository->find($productId);
 
         if (!$product) {
-            throw $this->createNotFoundException(
-                'No product found for productId ' . $productId
+            return new JsonResponse(
+                ['message' => "No product found for productId {$productId} !"],
+                Response::HTTP_NOT_FOUND
             );
         }
 
@@ -105,9 +128,16 @@ class ProductController extends AbstractController
     ): Response {
         $product = $productRepository->find($productId);
 
+        if (!$product) {
+            return new JsonResponse(
+                ['message' => "No product found for productId {$productId} !"],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
         $entityManager->remove($product);
         $entityManager->flush();
 
-        return new Response('Deleted product with id ' . $productId);
+        return new JsonResponse(['message' => "Successfully deleted product ! (id: {$productId})"]);
     }
 }

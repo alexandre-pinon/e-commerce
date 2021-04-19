@@ -1,0 +1,4 @@
+gesdinet_jwt_refresh_token:
+    ttl: '%env(int:JWT_REFRESH_TTL)%'
+    user_identity_field: login
+    user_provider: security.user.provider.concrete.app_user_provider
