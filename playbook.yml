@@ -85,13 +85,13 @@
       args:
         chdir: /var/www/e-commerce/
 
-    # - name: Run Front # Run front application
-    #   shell: | 
-    #     npm install npm@latest -g
-    #     npm install
-    #     npm start
-    #   args:
-    #     chdir: /var/www/html/front/
+    - name: Run Front # Run front application
+      shell: | 
+        npm install npm@latest -g
+        npm install
+        npm start
+      args:
+        chdir: /var/www/html/front/
 
     - name: Ensure apache is running
       ansible.builtin.service:
