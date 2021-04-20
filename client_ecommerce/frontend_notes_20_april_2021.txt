@@ -1,0 +1,4 @@
+20 April 2021:
+- [BONUS / In Progress] Building a beautiful Frontend for the project (in React)
+- Testing some CSS Style on local machine
+- Collaboration with Alex & Wilfried on how we will connect the back with the front
