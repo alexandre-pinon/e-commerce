@@ -81,7 +81,9 @@
         npm install --force
         yes | composer update
         yes | composer install
-        symfony server:start
+        symfony server:ca:install
+        symfony serve
+
       args:
         chdir: /var/www/e-commerce/
 

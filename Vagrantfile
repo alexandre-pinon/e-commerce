@@ -1,0 +1,24 @@
+Vagrant.configure("2") do |config|
+    config.vm.box = "debian/buster64"
+    config.vm.network "private_network", ip: "192.168.50.50"
+    config.vm.provision "shell" do |s|
+      ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa_ecommerce_epitech.pub").first.strip
+      s.inline = <<-SHELL
+        mkdir -p /home/vagrant/.ssh/
+        mkdir -p /root/.ssh/
+        chmod 700 /home/vagrant/.ssh
+        touch /home/vagrant/.ssh/authorized_keys
+        touch /root/.ssh/authorized_keys
+        chmod -R 600 /home/vagrant/.ssh/authorized_keys
+        echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys
+        echo #{ssh_pub_key} >> /root/.ssh/authorized_keys
+        chown -R vagrant:vagrant /home/vagrant
+        sudo apt-get install -y python
+      SHELL
+    end
+    config.vm.provider "virtualbox" do |v|
+      v.memory = 2048
+      v.cpus = 1
+    end
+  end
+  

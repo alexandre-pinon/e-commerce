@@ -17,3 +17,11 @@
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+.vagrant
+.vault_pass
+laravel-echo-server.json
+*.retry
+*.log
+npm-debug.log
+yarn-error.log

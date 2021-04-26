@@ -1,0 +1,4 @@
+php_version: 8.0
+npm_globals: 
+  - pm2
+ansistrano_deploy_to: /home/{{ user }}/e-commerce
