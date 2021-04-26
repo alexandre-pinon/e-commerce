@@ -51,23 +51,30 @@
       notify:
         - restart apache2
 
+    # - name: Copy a app  # Copy all the repository 
+    #   copy:
+    #     src: "{{ item }}"
+    #     dest: /var/www/e-commerce
+    #     owner: www-data
+    #     group: www-data
+    #   with_items:
+    #   - bin
+    #   - config
+    #   - front
+    #   - migrations
+    #   - public
+    #   - src
+    #   - composer.json
+    #   - composer.lock
+    #   - symfony.lock
+
     - name: Copy a app  # Copy all the repository 
       copy:
-        src: "{{ item }}"
+        src: ./
         dest: /var/www/e-commerce
         owner: www-data
         group: www-data
-      with_items:
-      - bin/
-      - config/
-      - front/
-      - migrations/
-      - public/
-      - src/
-      - .env
-      - composer.json
-      - composer.lock
-      - symfony.lock
+
 
     - name: set time php  # Set EU/Paris time zone for PHP
       become: true
@@ -78,14 +85,15 @@
 
     - name: run back # Run back application
       shell: | 
-        npm install --force
         yes | composer update
         yes | composer install
-        symfony server:ca:install
-        symfony serve
-
+        symfony server:start -d
       args:
-        chdir: /var/www/e-commerce/
+        chdir: /var/www/e-commerce
+      ignore_errors: yes
+      no_log: True
+      become: yes
+      become_user: awk
 
     - name: Run Front # Run front application
       shell: | 
@@ -93,7 +101,12 @@
         npm install
         npm start
       args:
-        chdir: /var/www/html/front/
+        chdir: /var/www/e-commerce/front
+      ignore_errors: yes
+      no_log: True
+      become: yes
+      become_user: awk
+
 
     - name: Ensure apache is running
       ansible.builtin.service:

@@ -1,13 +1,17 @@
-- name: LARAVEL | Passport Keys
-  shell: php artisan passport:keys
+# - name: SYMFONY | Install tls certification
+#   command:  symfony server:ca:install
+#   args:
+#     chdir: "{{ ansistrano_release_path.stdout }}"
+
+- name: NPM | install 
+  command: npm install
   args:
-    chdir: "{{ ansistrano_release_path.stdout }}"
-    creates: "{{ ansistrano_release_path.stdout }}/storage/oauth-private.key"
-- name: LARAVEL | Yarn 
-  command: yarn
+    chdir: "{{ ansistrano_release_path.stdout }}/client_ecommerce/"
+- name: PM2 | run frontend
+  command: pm2 start node_modules/react-scripts/scripts/start.js --name front 
   args:
-    chdir: "{{ ansistrano_release_path.stdout }}"
-- name: LARAVEL | build assets 
-  command: npm run prod
+    chdir: "{{ ansistrano_release_path.stdout }}/client_ecommerce/"
+- name: SYMFONY | run backend
+  command: php bin/console server:start 192.168.50.50:8000
   args:
     chdir: "{{ ansistrano_release_path.stdout }}"

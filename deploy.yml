@@ -1,6 +1,6 @@
 ---
 - name: Installation du serveur
-  hosts: google
+  hosts: web
   remote_user: "{{ user }}"
   tasks:
   - name: DEPLOY | Install rsync 
