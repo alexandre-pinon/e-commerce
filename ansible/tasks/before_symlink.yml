@@ -1,11 +1,12 @@
-- name: LARAVEL | Composer update
-  composer:
-    command: update
-    working_dir: "{{ ansistrano_release_path.stdout }}"
-    optimize_autoloader: true
+# - name: LARAVEL | Composer update
+#   composer:
+#     command: update
+#     working_dir: "{{ ansistrano_release_path.stdout }}"
+#     optimize_autoloader: true
 - name: LARAVEL | Composer install
   composer:
     command: install
+    no_dev: no
     working_dir: "{{ ansistrano_release_path.stdout }}"
     optimize_autoloader: true
 - name: LARAVEL | .env
