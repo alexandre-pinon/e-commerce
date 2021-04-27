@@ -25,4 +25,4 @@ laravel-echo-server.json
 *.log
 npm-debug.log
 yarn-error.log
-ansible/vars.yml
+# ansible/vars.yml
