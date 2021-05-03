@@ -1,0 +1,4 @@
+3 May 2021 : Worked on Binary Security
+- Tried some challenges;
+- Python Hashing : used uncompyle6 to see the content of the hashing.pyc file
+- Tried to decode the flag variable and understand what to put for the input
