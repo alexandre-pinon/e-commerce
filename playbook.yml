@@ -1,118 +1,54 @@
-- hosts: server
+---
+- name: Installation du serveur
+  hosts: web
+  remote_user: root
   tasks:
-    - name: apt install  # Install packages that we will need in the futures
-      apt:
-        update_cache: yes
-        state: latest
-        name: ['vim', 'git', 'tree', 'htop', 'curl', 'emacs', 'net-tools', 'sudo', 'make', 'unzip', 'python3', 'python3-pip', 'lsb-release', 'apt-transport-https', 'ca-certificates', 'wget', 'nodejs', 'npm']
-      
-    - name: Downloading php8.0 # Download php8.0 package
-      get_url:
-        url: https://packages.sury.org/php/apt.gpg
-        dest: /etc/apt/trusted.gpg.d/php.gpg
-
-    - name: add debian source for php 8.0
-      shell: | 
-        echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" |tee /etc/apt/sources.list.d/php.list
-        apt update
-
-    - name: install all php dependencies # PHP dependencies
-      apt:
-        update_cache: yes
-        state: latest
-        name: ['php8.0', 'php8.0-cli', 'php8.0-fpm', 'php8.0-pdo', 'php8.0-mysql', 'php8.0-zip', 'php8.0-gd', 'php8.0-mbstring', 'php8.0-curl', 'php8.0-xml', 'php8.0-bcmath', 'php8.0-intl', 'libapache2-mod-php8.0', 'libapache2-mod-fcgid']
-
-    - name: install all Front/Back requirements # application dependencies sush as npm, composer
-      shell: | 
-        php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-        php -r "if (hash_file('sha384', 'composer-setup.php') === '756890a4488ce9024fc62c56153228907f1545c228516cbf63f885e036d37e9a59d27d63f46af1d4d07ee0f76181c7d3') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-        php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-        php -r "unlink('composer-setup.php');"
-        wget https://get.symfony.com/cli/installer -O - | bash
-        mv /root/.symfony/bin/symfony /usr/local/bin/symfony
-
-
-    - name: install apache2 # Install Apache2 web server 
-      apt: 
-        update_cache: yes
-        state: latest
-        name: apache2
-      
-    - name: give right to php8.0-fpm
-      shell: | 
-        a2enmod proxy_fcgi setenvif
-        a2enconf php8.0-fpm
-        mkdir -p /var/www/e-commerce/
-
-    - name: enabled mod_rewrite # Give rights to apache
-      apache2_module: 
-        state: present
-        name: rewrite
-      notify:
-        - restart apache2
-
-    # - name: Copy a app  # Copy all the repository 
-    #   copy:
-    #     src: "{{ item }}"
-    #     dest: /var/www/e-commerce
-    #     owner: www-data
-    #     group: www-data
-    #   with_items:
-    #   - bin
-    #   - config
-    #   - front
-    #   - migrations
-    #   - public
-    #   - src
-    #   - composer.json
-    #   - composer.lock
-    #   - symfony.lock
-
-    - name: Copy a app  # Copy all the repository 
-      copy:
-        src: ./
-        dest: /var/www/e-commerce
-        owner: www-data
-        group: www-data
-
-
-    - name: set time php  # Set EU/Paris time zone for PHP
-      become: true
-      lineinfile:
-        path: /etc/php/8.0/cli/php.ini
-        regexp: "date.timezone ="
-        line: "date.timezome = Europe/Paris"
-
-    - name: run back # Run back application
-      shell: | 
-        yes | composer update
-        yes | composer install
-        symfony server:start -d
-      args:
-        chdir: /var/www/e-commerce
-      ignore_errors: yes
-      no_log: True
-      become: yes
-      become_user: awk
-
-    - name: Run Front # Run front application
-      shell: | 
-        npm install npm@latest -g
-        npm install
-        npm start
-      args:
-        chdir: /var/www/e-commerce/front
-      ignore_errors: yes
-      no_log: True
-      become: yes
-      become_user: awk
-
-
-    - name: Ensure apache is running
-      ansible.builtin.service:
-        name: httpd
-        state: started
-
-  handlers:
-    - name: restart apache2
-      service: name=apache2 state=restarted
+  - include_vars:
+      file: ansible/vars.yml
+  - name: "USER | Creation de {{ user }}"
+    user: 
+      name: "{{ user }}"
+      shell: /bin/bash
+  - name: USER | Clef SSH
+    authorized_key:
+      user: "{{ user }}"
+      state: present
+      key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  - name: "USER | Sudoers {{ user }}"
+    lineinfile:
+      dest: /etc/sudoers
+      state: present
+      regexp: "^{{ user }}"
+      line: '{{ user }} ALL=(ALL) NOPASSWD: ALL'
+      validate: 'visudo -cf %s'
+  - name: APT | Update & Upgrade
+    apt:
+      upgrade: dist
+      update_cache: yes
+  - name: Creates directory
+    file:
+      path: /src/www/e-commerce
+      state: directory
+      owner: www-data
+      group: www-data
+      mode: 0775
+      recurse: yes
+  - include_role:
+      name: ansible/tools
+  - include_role:
+      name: ansible/php
+  - include_role:
+      name: ansible/apache
+  - include_role:
+      name: ansible/nodejs
+  - name: REDIS | Install 
+    apt:
+      name: redis-server
+      state: present
+  - name: GIT | Create git brut repository 
+    command: "git init --bare {{ ansistrano_deploy_to }}.git"
+    args:
+      creates: "{{ ansistrano_deploy_to }}.git"
+    become: true
+    become_user: "{{ user }}"
+- import_playbook: deploy.yml

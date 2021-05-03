@@ -13,7 +13,7 @@
     authorized_key:
       user: "{{ user }}"
       state: present
-      key: "{{ lookup('file', '~/.ssh/id_rsa_ecommerce_epitech.pub') }}"
+      key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
   - name: "USER | Sudoers {{ user }}"
     lineinfile:
       dest: /etc/sudoers

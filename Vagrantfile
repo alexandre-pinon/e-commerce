@@ -2,7 +2,7 @@ Vagrant.configure("2") do |config|
     config.vm.box = "debian/buster64"
     config.vm.network "private_network", ip: "192.168.50.50"
     config.vm.provision "shell" do |s|
-      ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa_ecommerce_epitech.pub").first.strip
+      ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
       s.inline = <<-SHELL
         sudo apt-get install openssh-server
         echo "PermitRootLogin" >> /etc/ssh/sshd_config
