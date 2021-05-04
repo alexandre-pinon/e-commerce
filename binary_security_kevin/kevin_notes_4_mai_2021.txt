@@ -1,0 +1,4 @@
+4 May 2021 : Some Binary Security
+- Trying hard on Python Hashing
+- Tried something with GDB on Warm up
+- Read a book about reverse engineering to learn the basics
