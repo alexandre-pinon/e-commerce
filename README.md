@@ -36,29 +36,27 @@ T-WEB-600-PAR-6-1-ecommerce-alexandre.pinon
 
 <!-- API DOCUMENTATION -->
 ## API Documentation 
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
-- [Here](doc/)
+### User
+- [Login](doc/Login.md)
+- [Register](doc/Register.md)
+- [Logout](doc/Logout.md)
+- [Info](doc/Info.md)
+- [Edit](doc/Update_Info.md)
+- [Refresh token](doc/Refresh_Token.md)
+### Product
+- [Get all](doc/Get_All_products.md)
+- [Get single](doc/Get_Single_product.md)
+- [Add](doc/Add.md)
+- [Edit](doc/Edit.md)
+- [Delete](doc/Delete.md)
+### Cart
+- [Get products](doc/Get_Cart_Products.md)
+- [Add product to cart](doc/Add_Product_to_Cart.md)
+- [Remove product from cart](doc/Remove_Product_From_Cart.md)
+- [Validate](doc/Validate.md)
+### Order
+- [Get all](doc/Get_All_orders.md)
+- [Get single](doc/Get_Single_order.md)
 
 <!-- GETTING STARTED -->
 ## Getting Started
