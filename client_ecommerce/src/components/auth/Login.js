@@ -1,86 +1,100 @@
-import React from 'react'
+import React, { useState } from "react";
 import { API } from "../api/requests";
+import {
+  Grid,
+  Form,
+  Segment,
+  Button,
+  Header,
+  Message,
+  Icon,
+} from "semantic-ui-react";
+import { Link } from "react-router-dom";
+import { makeToast } from "../Toaster";
 
-const requestExample = async () => {
+const Login = (props) => {
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleFailedAuth = (response) => {
+    makeToast("error", response.message);
+    setPassword("");
+    setLoading(false);
+  };
+
+  const handleAuth = (response) => {
+    makeToast("success", "Successfully logged in !");
+    sessionStorage.setItem("token", response.token);
+    sessionStorage.setItem("refresh_token", response.refresh_token);
+    props.history.push("/");
+  };
+
+  const handleSubmit = async (event) => {
+    setLoading(true);
+    event.preventDefault();
+    const data = { login, password };
     try {
-      const data = {
-          login: "test2",
-          password: "123456",
-      }
       const response = await API.post({
         table: "USER",
         type: "login",
-      //   id: 1,
-        data
-      //   accessToken: "accessToken"
+        data,
       });
       console.log(response);
+      handleAuth(response);
     } catch (error) {
-      console.log(error);
+      handleFailedAuth(error?.response?.data)
     }
+  };
+
+  return (
+    <Grid textAlign="center" verticalAlign="middle" className="app">
+      <Grid.Column style={{ maxWidth: 450 }}>
+        <Header as="h2" icon color="purple" textAlign="center">
+          <Icon name="chat" color="purple" />
+          Login for PlooV4
+        </Header>
+        <Form onSubmit={handleSubmit} size="large">
+          <Segment stacked>
+            <Form.Input
+              fluid
+              name="login"
+              icon="user"
+              iconPosition="left"
+              placeholder="Login"
+              onChange={(e) => setLogin(e.target.value)}
+              value={login}
+              type="text"
+              required
+            />
+            <Form.Input
+              fluid
+              name="password"
+              icon="lock"
+              iconPosition="left"
+              placeholder="Password"
+              onChange={(e) => setPassword(e.target.value)}
+              value={password}
+              type="password"
+              required
+            />
+            <Button
+              disabled={loading}
+              className={loading ? "loading" : ""}
+              color="purple"
+              fluid
+              size="large"
+            >
+              Login
+            </Button>
+          </Segment>
+        </Form>
+        <Message>
+          Don't have an account ?<Link to="/register"> Register</Link>
+        </Message>
+      </Grid.Column>
+    </Grid>
+  );
 };
 
-const getUserExample = async () => {
-    try {
-      const data = {
-          login: "test2",
-      }
-      const response = await API.get({
-        table: "USER",
-      //   id: 1,
-        data
-      //   accessToken: "accessToken"
-      });
-      console.log(response);
-    } catch (error) {
-      console.log(error);
-    }
-};
-
-const updateUserExample = async () => {
-    try {
-      const data = {
-          login: "test2",
-          password: "123456",
-          email: "blackpink@gmail.com",
-          firstname: "Black",
-          lastname: "Pink",
-      }
-      const response = await API.put({
-        table: "USER",
-      //   id: 1,
-        data
-      //   accessToken: "accessToken"
-      });
-      console.log(response);
-    } catch (error) {
-      console.log(error);
-    }
-};
-
-function Login() {
-    return (
-        <div className="home">
-        <section className="text-gray-400 bg-gray-900 body-font">
-            <div className="container px-5 py-24 mx-auto">
-                <div className="text-center mb-20">
-                    <h1 className="sm:text-3xl text-2xl font-medium title-font text-white mb-4">
-                        <button onClick={requestExample}>Click Here To Test Login</button>
-                    </h1>
-                    <h1>
-                        <button onClick={getUserExample}>Click Here To Get User</button>
-                    </h1>
-                    <h1>
-                        <button onClick={updateUserExample}>Click Here To Update User</button>
-                    </h1>
-            <div className="flex mt-6 justify-center">
-            <div className="w-16 h-1 rounded-full bg-indigo-500 inline-flex" />
-            </div>
-            </div>
-            </div>
-        </section>
-        </div>
-    );
-}
-
-export default Login
+export default Login;

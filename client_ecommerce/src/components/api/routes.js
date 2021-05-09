@@ -7,13 +7,13 @@ export const userRoutes = () => ({
 });
 export const productRoutes = (id) => ({
   all: `/api/products`,
-  single: `/api/product/${id}`,
+  single: id ? `/api/product/${id}` : `/api/product`,
 });
 export const cartRoutes = (id) => ({
   validate: `/api/cart/validate`,
-  single: `/api/cart/${id}`,
+  single: id ? `/api/cart/${id}` : `/api/cart`,
 });
 export const orderRoutes = (id) => ({
   all: `/api/orders`,
-  single: `/api/orders/${id}`,
+  single: id ? `/api/order/${id}` : `/api/order`,
 });

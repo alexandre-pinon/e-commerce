@@ -1,4 +1,5 @@
 import { userRoutes, productRoutes, cartRoutes, orderRoutes } from "./routes";
+import axios from "axios";
 
 const { REACT_APP_API_ROOT_URL } = process.env;
 
@@ -36,15 +37,18 @@ const commonRequest = async ({
 
   console.log({ url, authorization, data });
 
-  const response = await fetch(url, {
-    method: method,
+  const response = await axios({
+    url,
+    method,
     headers: {
       Authorization: authorization,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(data),
+    data: JSON.stringify(data),
   });
-  return response.json();
+  let filteredResponse = await response.data;
+  if (!filteredResponse.code) filteredResponse.code = response.status;
+  return filteredResponse;
 };
 
 const get = (params) => {

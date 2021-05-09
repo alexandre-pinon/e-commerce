@@ -101,9 +101,12 @@ class ProductController extends AbstractController
         $product->setPrice($content['price'] ?? $product->getPrice());
         $entityManager->flush();
 
-        return $this->redirectToRoute('show_product', [
-            'productId' => $productId
-        ]);
+        // return $this->redirectToRoute('show_product', [
+        //     'productId' => $productId
+        // ]);
+        return new JsonResponse(
+            ['message' => "Successfully updated product {$product->getId()} !"],
+        );
     }
 
     #[Route('/api/product/{productId}', name: 'delete_product', methods: ['DELETE'])]
