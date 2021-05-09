@@ -45,13 +45,14 @@ class ProductController extends AbstractController
         return JsonResponse::fromJsonString($response);
     }
 
-    #[Route('/admin/product', name: 'create_product', methods: ['POST'])]
+    #[Route('/api/product', name: 'create_product', methods: ['POST'])]
     public function createProduct(
         EntityManagerInterface $entityManager,
         Request $request
     ): JsonResponse {
         $product = new Product();
 
+        $content = $request->toArray();
         $name = $content['name'] ?? '';
         $photo = $content['photo'] ?? '';
         $price = $content['price'] ?? '';
@@ -63,7 +64,6 @@ class ProductController extends AbstractController
             );
         }
 
-        $content = $request->toArray();
         $product->setName($name);
         $product->setDescription($content['description'] ?? '');
         $product->setPhoto($photo);
@@ -78,7 +78,7 @@ class ProductController extends AbstractController
         );
     }
 
-    #[Route('/admin/product/{productId}', name: 'update_product', methods: ['PUT'])]
+    #[Route('/api/product/{productId}', name: 'update_product', methods: ['PUT'])]
     public function updateProduct(
         EntityManagerInterface $entityManager,
         ProductRepository $productRepository,
@@ -106,7 +106,7 @@ class ProductController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/product/{productId}', name: 'delete_product', methods: ['DELETE'])]
+    #[Route('/api/product/{productId}', name: 'delete_product', methods: ['DELETE'])]
     public function deleteProduct(
         EntityManagerInterface $entityManager,
         ProductRepository $productRepository,
