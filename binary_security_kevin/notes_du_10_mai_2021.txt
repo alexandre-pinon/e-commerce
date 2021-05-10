@@ -1,0 +1,3 @@
+Binary Security 10 May 2021:
+- Warm up
+- Python Hashing
